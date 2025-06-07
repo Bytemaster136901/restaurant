@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Restaurant Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+  <style>
+    html, body {
+      background: #faefe3;
+      color: #2f251d;
+      font-family: system-ui, sans-serif;
+      margin: 0; padding: 0;
+      width: 100vw; height: 100vh;
+      overflow-x: hidden;
+    }
+    #main {
+      max-width: 700px;
+      margin: 24px auto 0 auto;
+      background: #fff7ef;
+      border-radius: 17px;
+      box-shadow: 0 6px 40px #9c7d5a22;
+      padding: 30px 20px 30px 20px;
+      min-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5em;
+    }
+    h1 { text-align: center; color: #b06618; }
+    #money {
+      font-size: 1.25em;
+      font-weight: bold;
+      color: #308d37;
+      background: #fff2c1;
+      border-radius: 9px;
+      display: inline-block;
+      padding: 8px 22px;
+      margin-bottom: 0.8em;
+    }
+    #orders {
+      margin-top: 0.2em;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1em;
+    }
+    .order {
+      background: #fff6e3;
+      border-radius: 10px;
+      padding: 14px 17px;
+      box-shadow: 0 2px 8px #b1854a13;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4em;
+    }
+    .order-head {
+      font-weight: bold;
+      color: #b06618;
+      font-size: 1.12em;
+      margin-bottom: 3px;
+    }
+    .order-items {
+      margin-left: 1.2em;
+      font-size: 1.07em;
+    }
+    .order-actions button {
+      background: #308d37;
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      border-radius: 7px;
+      padding: 5px 16px;
+      margin-right: 10px;
+      cursor: pointer;
+      font-size: 1.08em;
+      transition: background 0.13s;
+    }
+    .order-actions button.decline {
+      background: #ce3b2e;
+    }
+    .order-actions button:active { opacity: 0.8; }
+    #menu {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1em;
+      margin-top: 1em;
+      justify-content: center;
+    }
+    .dish {
+      background: #ffedd0;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px #b1854a18;
+      padding: 14px 12px 10px 12px;
+      min-width: 110px;
+      text-align: center;
+      font-size: 1.11em;
+      margin-bottom: 0.4em;
+    }
+    .dish-title {
+      color: #b06618;
+      font-weight: bold;
+    }
+    .dish-price {
+      color: #2f7e1f;
+      font-size: 0.99em;
+      margin-top: 3px;
+      margin-bottom: 7px;
+    }
+    .dish-stock {
+      color: #aa4a2a;
+      font-size: 0.97em;
+      margin-bottom: 5px;
+    }
+    .dish button {
+      background: #ebbe6e;
+      border: none;
+      border-radius: 5px;
+      padding: 2px 10px;
+      font-weight: bold;
+      color: #b06618;
+      cursor: pointer;
+      margin-top: 4px;
+      font-size: 1em;
+      transition: background 0.13s;
+    }
+    .dish button:active { background: #e3a21b; color: #fff; }
+    #log {
+      min-height: 2.4em;
+      background: #eee5d2;
+      border-radius: 7px;
+      margin-top: 1.7em;
+      padding: 8px 12px;
+      color: #8b5420;
+      font-size: 1.09em;
+      font-family: inherit;
+    }
+    #restock-btn {
+      background: #e3a21b;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 18px;
+      font-size: 1.08em;
+      margin-top: 1.2em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.13s;
+      float: right;
+      margin-bottom: 1.2em;
+    }
+    #restock-btn:active { background: #b06618; }
+    .serving-countdown {
+      color: #b06618;
+      font-weight: bold;
+      font-size: 1.07em;
+      margin-left: 8px;
+      margin-right: 8px;
+      display: inline-block;
+      min-width: 2em;
+    }
+    @media (max-width: 700px) {
+      #main { min-height: unset; }
+    }
+    @media (max-width: 540px) {
+      #main { padding: 13px 2vw 20px 2vw; }
+      .dish { min-width: 89px; font-size:1em;}
+    }
+  </style>
+</head>
+<body>
+  <div id="main">
+    <h1>🍽️ Restaurant Simulator</h1>
+    <div id="money"></div>
+    <button id="restock-btn">Restock Ingredients (-$30)</button>
+    <div id="menu"></div>
+    <div id="orders"></div>
+    <div id="log"></div>
+  </div>
+  <script>
+    // --- Config ---
+    const menu = [
+      { name: "Burger", price: 12, stock: 10, restock: 4 },
+      { name: "Pizza", price: 15, stock: 10, restock: 3 },
+      { name: "Sushi", price: 18, stock: 10, restock: 2 },
+      { name: "Salad", price: 8, stock: 10, restock: 5 },
+      { name: "Soup", price: 7, stock: 10, restock: 5 },
+      { name: "Pasta", price: 13, stock: 10, restock: 3 },
+      { name: "Steak", price: 22, stock: 10, restock: 1 }
+    ];
+    let money = 30;
+    let orders = [];
+    let orderId = 1;
+    let logTimer = null;
+    let servingCountdowns = {}; // {orderId: {timer:intervalId, remaining:number}}
+    let orderTimers = {}; // {orderId: {timer:timeoutId, expired:boolean}}
+
+    // --- Helper to calculate cost of order
+    function getOrderCost(order) {
+      return order.items.reduce((sum, it) => {
+        const dish = menu.find(d => d.name === it.dish);
+        return sum + (dish ? dish.price * it.qty : 0);
+      }, 0);
+    }
+
+    // --- Render money ---
+    function renderMoney() {
+      document.getElementById('money').textContent = "💵 $" + money.toFixed(2);
+    }
+
+    // --- Render menu (dishes) ---
+    function renderMenu() {
+      const menuDiv = document.getElementById('menu');
+      menuDiv.innerHTML = menu.map((dish, i) => `
+        <div class="dish">
+          <div class="dish-title">${dish.name}</div>
+          <div class="dish-price">$${dish.price}</div>
+          <div class="dish-stock">Stock: ${dish.stock}</div>
+          <button onclick="restockDish(${i})">Buy +1 ($${Math.floor(dish.price/2)})</button>
+        </div>
+      `).join('');
+    }
+    window.restockDish = function(i) {
+      const dish = menu[i];
+      let price = Math.floor(dish.price/2);
+      if (money < price) return showLog("Not enough money to buy "+dish.name+".");
+      dish.stock++;
+      money -= price;
+      renderMenu(); renderMoney();
+      showLog("Bought 1 "+dish.name+" for $"+price+".");
+    };
+
+    // --- Render orders ---
+    function renderOrders() {
+      const ordersDiv = document.getElementById('orders');
+      if (orders.length === 0) {
+        ordersDiv.innerHTML = `<div style="color:#a98e70;font-size:1.09em;text-align:center;">No orders yet. Waiting for customers...</div>`;
+        return;
+      }
+      ordersDiv.innerHTML = orders.map(order => {
+        let countdownHtml = '';
+        if (servingCountdowns[order.id]) {
+          countdownHtml = `<span class="serving-countdown" id="countdown-${order.id}">${servingCountdowns[order.id].remaining}</span>s`;
+        }
+        return `
+        <div class="order">
+          <div class="order-head">Order #${order.id} - Table ${order.table}</div>
+          <div class="order-items">
+            ${order.items.map(x=>`${x.qty}x ${x.dish}`).join('<br>')}
+          </div>
+          <div class="order-actions">
+            <button onclick="acceptOrder(${order.id})" ${servingCountdowns[order.id] ? 'disabled' : ''}>Serve</button>
+            ${countdownHtml}
+            <button class="decline" onclick="declineOrder(${order.id})" ${servingCountdowns[order.id] ? 'disabled' : ''}>Decline</button>
+          </div>
+        </div>
+      `;
+      }).join('');
+    }
+
+    // --- Accept order with 5s countdown and 30s limit ---
+    window.acceptOrder = function(id) {
+      if (servingCountdowns[id]) return; // Already in progress
+
+      let idx = orders.findIndex(o=>o.id===id);
+      if (idx===-1) return;
+      let order = orders[idx];
+      // Check if order timed out (expired)
+      if (orderTimers[id] && orderTimers[id].expired) {
+        showLog("Order #" + order.id + " expired! You lost $" + getOrderCost(order) + ".");
+        // Penalty already applied, just remove order
+        clearTimeout(orderTimers[id].timer);
+        delete orderTimers[id];
+        orders.splice(idx, 1);
+        renderOrders();
+        return;
+      }
+
+      // Check stock
+      let canServe = true;
+      for (let item of order.items) {
+        let dish = menu.find(d=>d.name===item.dish);
+        if (!dish || dish.stock<item.qty) { canServe = false; break; }
+      }
+      if (!canServe) {
+        showLog("Not enough stock to serve order #"+order.id+".");
+        return;
+      }
+
+      // Start 5s countdown before serving
+      let remaining = 5;
+      servingCountdowns[id] = {
+        remaining,
+        timer: setInterval(() => {
+          remaining--;
+          servingCountdowns[id].remaining = remaining;
+          let elem = document.getElementById('countdown-'+id);
+          if (elem) elem.textContent = remaining;
+          if (remaining <= 0) {
+            clearInterval(servingCountdowns[id].timer);
+            delete servingCountdowns[id];
+            // Actually serve
+            for (let item of order.items) {
+              let dish = menu.find(d=>d.name===item.dish);
+              dish.stock -= item.qty;
+            }
+            let total = getOrderCost(order);
+            money += total;
+            showLog("Order #"+order.id+" served! +$"+total);
+            if (orderTimers[id]) {
+              clearTimeout(orderTimers[id].timer);
+              delete orderTimers[id];
+            }
+            orders.splice(idx,1);
+            renderOrders(); renderMenu(); renderMoney();
+          } else {
+            renderOrders();
+          }
+        }, 1000)
+      };
+      renderOrders();
+      showLog("Preparing order #"+order.id+"... Serving in 5 seconds.");
+    };
+
+    window.declineOrder = function(id) {
+      // Prevent declining while serving countdown is running
+      if (servingCountdowns[id]) return;
+      let idx = orders.findIndex(o=>o.id===id);
+      if (idx===-1) return;
+      let order = orders[idx];
+      showLog("Order #"+order.id+" declined. You lost $" + getOrderCost(order) + ".");
+      money -= getOrderCost(order);
+      if (orderTimers[id]) {
+        clearTimeout(orderTimers[id].timer);
+        delete orderTimers[id];
+      }
+      orders.splice(idx,1);
+      renderOrders();
+      renderMoney();
+    };
+
+    // --- Restock all ---
+    document.getElementById('restock-btn').onclick = function() {
+      if (money < 30) return showLog("Not enough money to restock!");
+      menu.forEach(dish => dish.stock += dish.restock);
+      money -= 30;
+      renderMenu(); renderMoney();
+      showLog("All ingredients restocked!");
+    };
+
+    // --- Show log ---
+    function showLog(msg) {
+      clearTimeout(logTimer);
+      document.getElementById('log').textContent = msg;
+      logTimer = setTimeout(()=>document.getElementById('log').textContent="", 3400);
+    }
+
+    // --- Generate new orders randomly ---
+    function generateOrder() {
+      // Randomly select 1-3 dishes, random quantities, random table
+      let itemsNum = Math.floor(Math.random()*2.2)+1;
+      let items = [];
+      let used = {};
+      for (let i=0; i<itemsNum; ++i) {
+        let idx;
+        do { idx = Math.floor(Math.random()*menu.length); } while(used[idx]);
+        used[idx] = true;
+        let qty = Math.floor(Math.random()*2.3)+1;
+        items.push({dish: menu[idx].name, qty});
+      }
+      let table = Math.floor(Math.random()*10)+1;
+      let thisOrderId = orderId++;
+      orders.push({
+        id: thisOrderId,
+        table,
+        items
+      });
+
+      // -- 30 second timer for penalty if not served or declined --
+      orderTimers[thisOrderId] = {
+        expired: false,
+        timer: setTimeout(() => {
+          let idx = orders.findIndex(o=>o.id === thisOrderId);
+          if (idx !== -1) {
+            orderTimers[thisOrderId].expired = true;
+            let order = orders[idx];
+            let penalty = getOrderCost(order);
+            money -= penalty;
+            showLog("Order #"+order.id+" was not served in time. You lost $"+penalty+".");
+            orders.splice(idx,1);
+            renderOrders();
+            renderMoney();
+          }
+        }, 30000)
+      };
+
+      renderOrders();
+    }
+    // Start order generator
+    setInterval(() => {
+      if (orders.length < 4 && Math.random()<0.77) generateOrder();
+    }, 3700);
+
+    // --- Init ---
+    renderMoney();
+    renderMenu();
+    renderOrders();
+    showLog("Welcome! Restock, serve orders, and manage your restaurant!");
+  </script>
+</body>
+</html>
